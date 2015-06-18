@@ -1,4 +1,3 @@
-!to "disk_1cb11b67303e6eba.img",plain
 *=$500;set offset to 0x500
 
 LOW=$00FF
