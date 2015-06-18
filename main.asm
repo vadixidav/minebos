@@ -10,7 +10,7 @@ rep #$30
 ; Initialize the redbus
 lda #*
 mmu #MMU_POR_SETADDRESS
-lda #$3
+lda #3
 mmu #MMU_REDBUS_SETID
 lda #REDBUS_PAGE
 mmu #MMU_REDBUS_SETPAGE
