@@ -1,10 +1,12 @@
-*=$500;set offset to 0x500
+ *=$500;set offset to 0x500
 
 LOW=$00FF
 HIGH=$FF00
 
 ;The last word address in the FORTH kernel
-FORTH_LAST_KERNEL_WORD=.cold
+FORTH_LAST_KERNEL_WORD=.tmpend
+FORTH_PARSE_SIZE=$20 ;In bytes
+FORTH_INPUTBUFFER_SIZE=$80 ;In bytes
 
 ;A link to the previous word
 FORTH_WORDOFFSET_LINK=$0
@@ -29,6 +31,12 @@ ZP_SHELL_OFFSET=$03 ;8 bit
 ZP_TEMP=$04 ;16 bit
 ZP_LASTWORD=$06 ;16 bit
 ZP_BACKSTACK=$08 ;16 bit
+ZP_REDBUS_ID=$0A ;16 bit
+ZP_MODE_COMPILE=$0C ;16 bit
+ZP_FORTH_HERE=$0E ;16 bit
+ZP_FORTH_TIB=$10 ;16 bit - pointer to beginning of input buffer
+ZP_FORTH_PARSEBUFFER=$12 ;16 bit pointer to beginning of parse buffer
+ZP_FORTH_PARSELOC=$14 ;16 bit - location that parse is parsing 
 
 STACK_PAGE=$0100
 REDBUS_PAGE=$0200
@@ -76,7 +84,3 @@ BLIT_MODE_SHIFT=3
 SCREEN_MEMORY=REDBUS_PAGE+$10
 SCREEN_WIDTH=$50
 SCREEN_HEIGHT=$32
-
-CALL_CHARPUT=$00
-CALL_CHARGET=$01
-CALL_CLEARSCREEN=$02
