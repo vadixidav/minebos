@@ -36,7 +36,7 @@ ZP_MODE_COMPILE=$0C ;16 bit
 ZP_FORTH_HERE=$0E ;16 bit
 ZP_FORTH_TIB=$10 ;16 bit - pointer to beginning of input buffer
 ZP_FORTH_PARSEBUFFER=$12 ;16 bit pointer to beginning of parse buffer
-ZP_FORTH_PARSELOC=$14 ;16 bit - location that parse is parsing 
+ZP_FORTH_PARSELOC=$14 ;16 bit - location that parse is parsing
 
 STACK_PAGE=$0100
 REDBUS_PAGE=$0200

@@ -139,6 +139,10 @@ nxt
 !16 (.again_end - .again_def) | FORTH_WORDFLAG_IMMEDIATE
 .again_def
 ldx ZP_FORTH_HERE ;Get HERE
+ldy #.again_does ;Load loop does
+sty 0,X ;Add loop does to thread (POSTPONE)
+inx
+inx
 rly ;Pull address from rstack
 sty 0,X ;Place address HERE
 inx
@@ -146,6 +150,12 @@ inx
 stx ZP_FORTH_HERE ;Store new HERE back
 nxt
 .again_end
+.again_does
+tix ;Transfer pointer to loop thread beginning into X
+ldy 0,X ;Load Y with thread beginning pointer
+tyx ;Transfer thread beginning to X
+txi ;Transfer thread beginning to I
+nxt
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .bsalloc ;backstack allocate (num : addr) - allocates num bytes onto backstack and
@@ -220,8 +230,63 @@ nxt
 .parse_end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-.create ;create a new word definition
+.next ;next word () - moves to next FORTH word in a thread and leaves calling word
 !16 .parse
+!16 .next_name
+!16 (.next_end - .next_def)
+.next_def
+rli ;Get I from rstack (before enter was called)
+nxt ;Go to next word on the outside
+.next_end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.doconst ;push contant (: const) - loads an immediate constant onto stack
+!16 .next
+!16 .doconst_name
+!16 (.doconst_end - .doconst_def)
+.doconst_def
+pha ;Push old A to stack
+nxa ;Get constant
+nxt
+.doconst_end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.fetch ;load variable (addr : data) - loads data at address addr and puts it on stack
+!16 .doconst
+!16 .fetch_name
+!16 (.fetch_end - .fetch_def)
+.fetch_def
+tax
+lda 0,X
+nxt
+.fetch_end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.store ;store variable (data addr :) - stores data to address addr
+!16 .fetch
+!16 .store_name
+!16 (.store_end - .store_def)
+.store_def
+tax
+pla
+sta 0,X
+pla ;Get next thing off stack
+nxt
+.store_end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.find ;find word (delim : nameaddr 0 | token 1 | token -1)
+!16 .store
+!16 .find_name
+!16 (.find_end - .find_def)
+.find_def
+
+nxt
+.find_end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.create ;create a new word definition
+!16 .find
 !16 .create_name
 !16 (.create_end - .create_def)
 .create_def
@@ -242,6 +307,11 @@ nxt
 .systemBackStack
 .tmpend_name !raw "TMPEND", 0
 .create_name !raw "CREATE", 0
+.find_name !raw "FIND", 0
+.store_name !raw "!", 0
+.fetch_name !raw "@", 0
+.doconst_name !raw "DOCONST", 0
+.next_name !raw "NEXT", 0
 .inputbuffer_off !fill FORTH_INPUTBUFFER_SIZE
 .parsebuffer_off !fill FORTH_PARSE_SIZE
 .parse_name !raw "PARSE", 0
