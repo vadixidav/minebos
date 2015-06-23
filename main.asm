@@ -30,7 +30,7 @@ sep #$20
 	dec ;Decrement the value in A to restore it
 	sta 0,X ;Restore old value
 	inx ;Increment X to go to the next spot
-	bra -
+	bra -	
 +
 
 	;Now X is equal to the first non-existent memory address
@@ -275,12 +275,99 @@ nxt
 .store_end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-.find ;find word (delim : nameaddr 0 | token 1 | token -1)
+.count ;count characters (addr1 : addr2 num) - retrieves string address (addr2) and
+;number of characters (num) from counted string addr1
 !16 .store
+!16 .count_name
+!16 (.count_end - .count_def)
+.count_def
+tax ;Move address into X
+
+;Switch into 8-bit accum mode
+	sep #$20
+	!as
+
+lda 0,X ;Get num into A
+
+;Switch back to 16-bit accum mode
+	rep #$20
+	!al
+
+inx ;Move X forward to point to string
+phx ;Address is now on stack
+
+nxt
+.count_end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.strcmp ;compare strings (addr1 n1 addr2 n2 : same?) - compares strings from addr1
+;and addr2 using n1 and n2 as their respective lengths
+!16 .count
+!16 .strcmp_name
+!16 (.strcmp_end - .strcmp_def)
+.strcmp_def
+;A already contains n2, the only amount we will use
+plx ;Pull addr2 into X
+;We must find the smaller of the two strings
+cmp 0,S ;Compare A (n2) to n1 on stack
+beq + ;Move to + if they are the same length
+;Here the strings are not the same
+pld ;Discard n1 from stack
+pld ;Discard addr1 from stack
+lda #0 ;Put false into A because they are not the same
+nxt ;Go to the next word
++
+pld ;Discard n1 from stack (it is the same as n2)
+ply ;Pull addr1 into Y
+
+;Begin string comparison
+	;Switch to 8-bit accumulator (for characters)
+		sep #$20
+		!as
+	;It is important to consider that A has changed to 8 bits
+-
+	cmp #0
+	beq + ;If A is 0, there are no characters left to compare
+	tad ;Back up count into D
+	lda 0,X ;Load A with character from addr2
+	cmp 0,Y ;Compare A with character from addr1
+	beq ++ ;Branch to ++ to continue if the character is the same
+	;Switch to 16-bit before moving to next word
+		rep #$20
+		!al
+	lda #0 ;Character is not the same so return false
+	nxt ;Go to next word
+	++
+	!as ;At this location we are still in short mode, so inform the assembler
+	;Update all counters and addresses
+	inx
+	iny
+	dec A
+	bra - ;Do it again!
++
+
+;Switch to 16-bit before returning
+	rep #$20
+	!al
+
+lda #-1 ;Put all 1 into A to indicate success
+
+nxt
+.strcmp_end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+.find ;find word (delim : nameaddr 0 | token 1 | token -1)
+!16 .strcmp
 !16 .find_name
 !16 (.find_end - .find_def)
 .find_def
-
+pha
+lda #' ' ;Load space character as the delimiter
+ent
+!16 .parse
+!16 + ;Place address after this as next word
++
+rli ;Pull I from enter
 nxt
 .find_end
 
@@ -305,21 +392,23 @@ nxt
 .tmpend_end
 
 .systemBackStack
-.tmpend_name !raw "TMPEND", 0
-.create_name !raw "CREATE", 0
-.find_name !raw "FIND", 0
-.store_name !raw "!", 0
-.fetch_name !raw "@", 0
-.doconst_name !raw "DOCONST", 0
-.next_name !raw "NEXT", 0
+.tmpend_name !raw 6, "TMPEND"
+.create_name !raw 6, "CREATE"
+.find_name !raw 4, "FIND"
+.strcmp_name !raw 6, "STRCMP"
+.count_name !raw 5, "COUNT"
+.store_name !raw 1, "!"
+.fetch_name !raw 1, "@"
+.doconst_name !raw 7, "DOCONST"
+.next_name !raw 4, "NEXT"
 .inputbuffer_off !fill FORTH_INPUTBUFFER_SIZE
 .parsebuffer_off !fill FORTH_PARSE_SIZE
-.parse_name !raw "PARSE", 0
-.bsfree_name !raw "BSFREE", 0
-.bsalloc_name !raw "BSALLOC", 0
-.again_name !raw "AGAIN", 0
-.begin_name !raw "BEGIN", 0
-.cold_name !raw "COLD", 0
+.parse_name !raw 5, "PARSE"
+.bsfree_name !raw 6, "BSFREE"
+.bsalloc_name !raw 7, "BSALLOC"
+.again_name !raw 5, "AGAIN"
+.begin_name !raw 5, "BEGIN"
+.cold_name !raw 4, "COLD"
 .systemBackStackEnd
 
 !src "footer.asm"
